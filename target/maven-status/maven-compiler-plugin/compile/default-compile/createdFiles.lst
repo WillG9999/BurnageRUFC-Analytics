@@ -1,0 +1,16 @@
+FirstTeamReportGenerator$MatchRecord.class
+ClubConstants.class
+BurnageAnalyticsReportGenerator$ClubReportData.class
+LeagueTableScraper$Fixture.class
+EmailService$1.class
+ClubConstants$Club.class
+BurnageAnalyticsReportGenerator$MatchData.class
+BurnageAnalyticsReportGenerator$MatchRecord.class
+Main.class
+BurnageAnalyticsReportGenerator.class
+LeagueTableScraper.class
+LeagueTableScraper$LeagueTableEntry.class
+LeagueTableScraper$LeagueData.class
+FirstTeamReportGenerator.class
+LeagueTableScraper$LeagueTableData.class
+EmailService.class

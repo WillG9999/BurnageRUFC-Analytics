@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Burnage Analytics Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #333333 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .header .generated-date {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e0e0e0;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            color: #1a1a1a;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: #f9f9f9;
+            border-left: 4px solid #666666;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .warning-box {
+            background: #fafafa;
+            border-left: 4px solid #999999;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .warning-box strong {
+            color: #333333;
+        }
+
+        .club-section {
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+        }
+
+        .club-header {
+            background: linear-gradient(135deg, #2a2a2a 0%, #444444 100%);
+            color: white;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .club-header:hover {
+            background: linear-gradient(135deg, #1a1a1a 0%, #333333 100%);
+        }
+
+        .club-header .toggle-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+
+        .club-header .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .club-section.burnage-club .club-header,
+        .burnage-header {
+            background: linear-gradient(135deg, #B8860B 0%, #DAA520 100%);
+        }
+
+        .club-section.burnage-club .club-header:hover,
+        .burnage-header:hover {
+            background: linear-gradient(135deg, #996515 0%, #B8860B 100%);
+        }
+
+        .next-opponent-header {
+            background: linear-gradient(135deg, #8B0000 0%, #CC0000 100%);
+        }
+
+        .next-opponent-header:hover {
+            background: linear-gradient(135deg, #660000 0%, #8B0000 100%);
+        }
+
+        .upcoming-fixture-tag {
+            background: linear-gradient(135deg, #8B0000 0%, #CC0000 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.95rem;
+            flex-wrap: wrap;
+        }
+
+        .upcoming-fixture-tag .fixture-label {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .upcoming-fixture-tag .fixture-date {
+            font-weight: 600;
+        }
+
+        .upcoming-fixture-tag .fixture-separator {
+            opacity: 0.6;
+        }
+
+        .upcoming-fixture-tag .fixture-opponent {
+            font-weight: 600;
+        }
+
+        .upcoming-fixture-tag .fixture-venue {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .upcoming-fixture-tag.burnage-fixture-tag {
+            background: linear-gradient(135deg, #B8860B 0%, #DAA520 100%);
+        }
+
+        .match-subsection {
+            margin-bottom: 20px;
+        }
+
+        .match-subsection:last-child {
+            margin-bottom: 0;
+        }
+
+        .subsection-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            padding: 8px 12px;
+            background: #f0f0f0;
+            border-left: 3px solid #1a1a1a;
+            margin-bottom: 10px;
+            margin-top: 5px;
+        }
+
+        .match-list {
+            padding: 20px 25px;
+            display: block;
+        }
+
+        .match-list.collapsed {
+            display: none;
+        }
+
+        .club-header h3 {
+            font-size: 1.2rem;
+        }
+
+        .club-header .match-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .club-header .filter-type {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-left: 10px;
+        }
+
+        .match-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .match-item:last-child {
+            border-bottom: none;
+        }
+
+        .match-date {
+            font-weight: 600;
+            color: #1a1a1a;
+            min-width: 100px;
+        }
+
+        .match-title {
+            flex-grow: 1;
+            padding: 0 20px;
+            color: #444444;
+        }
+
+        .match-link a {
+            background: #1a1a1a;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .match-link a:hover {
+            background: #333333;
+        }
+
+        .no-matches {
+            color: #666666;
+            font-style: italic;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .summary-card {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+
+        .summary-card .number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .summary-card .label {
+            color: #666666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .alternative-access {
+            background: #f9f9f9;
+            border-left: 4px solid #666666;
+            padding: 15px 20px;
+            margin-top: 15px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .alternative-access h4 {
+            color: #1a1a1a;
+            margin-bottom: 10px;
+        }
+
+        .alternative-access ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .alternative-access li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .alternative-access li:last-child {
+            border-bottom: none;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #666666;
+            font-size: 0.85rem;
+        }
+
+        .methodology-list {
+            list-style: disc;
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+
+        .methodology-list li {
+            margin-bottom: 8px;
+        }
+
+        .league-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .league-table th {
+            background: #1a1a1a;
+            color: white;
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .league-table th:nth-child(2) {
+            text-align: left;
+        }
+
+        .league-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .league-table td:nth-child(2) {
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .league-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .league-table tr.burnage-row {
+            background: #FDF5E6;
+            font-weight: 600;
+        }
+
+        .league-table tr.burnage-row:hover {
+            background: #FAE5C7;
+        }
+
+        .league-table .position {
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .league-table .points {
+            font-weight: 700;
+            color: #1a365d;
+        }
+
+        .league-table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .league-table-header h3 {
+            color: #2d3748;
+            font-size: 1.1rem;
+        }
+
+        .league-table-header .source {
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
+        .home-venue {
+            color: #2f855a;
+            font-weight: 600;
+        }
+
+        .away-venue {
+            color: #c05621;
+            font-weight: 600;
+        }
+
+        .fixture-section h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .collapsible-section {
+            margin-top: 20px;
+        }
+
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px;
+            background: #f7fafc;
+            border-radius: 4px;
+        }
+
+        .collapsible-header:hover {
+            background: #edf2f7;
+        }
+
+        .collapsible-content {
+            padding-top: 15px;
+        }
+
+        .collapsible-content.collapsed {
+            display: none;
+        }
+
+        .section-header-collapsible {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .section-header-collapsible:hover {
+            opacity: 0.8;
+        }
+
+        .section-header-collapsible .toggle-icon {
+            font-size: 1.2rem;
+            color: #1a365d;
+            transition: transform 0.3s ease;
+        }
+
+        .section-header-collapsible .toggle-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .section-content.collapsed {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Burnage Analytics Report</h1>
+            <p class="subtitle">Opposition Performance and Video Analysis Data</p>
+            <p class="generated-date">Report Generated: <span th:text="${generatedDate}">2026-03-07</span></p>
+        </div>
+
+        <div class="section">
+            <div class="section-header-collapsible" onclick="toggleSection('about')">
+                <h2 class="section-title" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">About This Report</h2>
+                <span id="toggle-icon-about" class="toggle-icon collapsed">&#9660;</span>
+            </div>
+            <div id="section-content-about" class="section-content collapsed">
+                <div class="info-box">
+                    <p>This report aggregates the latest accessible match footage from Veo across clubs in our competitive landscape.
+                       The data provides valuable resources for performance analysis, opposition research, and tactical preparation.</p>
+                </div>
+
+                <div class="warning-box">
+                    <strong>Important Recommendations:</strong>
+                    <ul class="methodology-list">
+                        <li>Focus on the <strong>most recent matches</strong> for accurate performance and tactical analysis</li>
+                        <li>Older footage may not reflect current team composition, form, or playing style</li>
+                        <li>Cross-reference with other sources where possible for comprehensive analysis</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <strong>Data Accuracy Notice:</strong>
+                    <p>This report relies on automated pattern matching of match titles and team names. Due to variations in human naming
+                       conventions across different clubs, some matches may be incorrectly categorised:</p>
+                    <ul class="methodology-list">
+                        <li>Some 2nd XV or development matches may appear in the listings</li>
+                        <li>Match titles may be incomplete or use abbreviations</li>
+                        <li>Youth team matches (U16, Colts, etc.) are filtered where identifiable</li>
+                        <li>Always verify the match content before using for analysis</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Burnage Fixtures</h2>
+
+            <div th:if="${nextFixture != null}" class="upcoming-fixture-tag burnage-fixture-tag">
+                <span class="fixture-label">NEXT FIXTURE:</span>
+                <span class="fixture-date" th:text="${nextFixture.date}">Saturday, 07 Mar 2026</span>
+                <span class="fixture-separator">|</span>
+                <span class="fixture-opponent">vs <span th:text="${nextOpponent}">Widnes</span></span>
+                <span class="fixture-separator">|</span>
+                <span class="fixture-venue" th:text="${nextFixture.getVenue()}">Home</span>
+            </div>
+
+            <div th:if="${upcomingFixtures != null and !upcomingFixtures.isEmpty()}">
+                <h3 style="color: #1a1a1a; margin-bottom: 15px; margin-top: 20px;">Upcoming Fixtures</h3>
+                <table class="league-table" style="margin-bottom: 25px;">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Opponent</th>
+                            <th>Venue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="fixture : ${upcomingFixtures}">
+                            <td th:text="${fixture.date}">TBD</td>
+                            <td th:text="${fixture.getOpponent()}">Opponent</td>
+                            <td th:classappend="${fixture.isHomeGame()} ? 'home-venue' : 'away-venue'"
+                                th:text="${fixture.getVenue()}">Venue</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div th:if="${upcomingFixtures == null or upcomingFixtures.isEmpty()}"
+                 class="warning-box">
+                <strong>Fixtures Unavailable:</strong>
+                <p>Unable to fetch fixture data from England Rugby. Visit
+                   <a href="https://www.englandrugby.com/fixtures-and-results/search-results?competition=1623&amp;division=66490&amp;season=2025-2026&amp;team=3684" target="_blank">
+                   England Rugby</a> directly to view Burnage fixtures.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header-collapsible" onclick="toggleSection('results')">
+                <h2 class="section-title" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">Recent Results</h2>
+                <span id="toggle-icon-results" class="toggle-icon collapsed">&#9660;</span>
+            </div>
+            <div id="section-content-results" class="section-content collapsed">
+                <div th:if="${recentResults != null and !recentResults.isEmpty()}">
+                    <table class="league-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Opponent</th>
+                                <th>Venue</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="result : ${recentResults}">
+                                <td th:text="${result.date}">TBD</td>
+                                <td th:text="${result.getOpponent()}">Opponent</td>
+                                <td th:classappend="${result.isHomeGame()} ? 'home-venue' : 'away-venue'"
+                                    th:text="${result.getVenue()}">Venue</td>
+                                <td th:text="${result.getResultDisplay()}">W 0-0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div th:if="${recentResults == null or recentResults.isEmpty()}" class="warning-box">
+                    <strong>Results Unavailable:</strong>
+                    <p>Unable to fetch recent results from England Rugby. Visit
+                       <a href="https://www.englandrugby.com/fixtures-and-results/search-results?competition=1623&amp;division=66490&amp;season=2025-2026&amp;team=3684" target="_blank">
+                       England Rugby</a> directly to view Burnage results.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">League Table</h2>
+            <div th:if="${leagueTable != null and leagueTable.hasData()}">
+                <div class="league-table-header">
+                    <h3 th:text="${leagueTable.leagueName}">Regional 2 North West</h3>
+                    <span class="source">Source: England Rugby</span>
+                </div>
+                <table class="league-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Team</th>
+                            <th>P</th>
+                            <th>W</th>
+                            <th>D</th>
+                            <th>L</th>
+                            <th>PF</th>
+                            <th>PA</th>
+                            <th>+/-</th>
+                            <th>TB</th>
+                            <th>LB</th>
+                            <th>Pts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="entry : ${leagueTable.entries}" th:classappend="${entry.isBurnage()} ? 'burnage-row' : ''">
+                            <td class="position" th:text="${entry.position}">1</td>
+                            <td th:text="${entry.teamName}">Team Name</td>
+                            <td th:text="${entry.played}">0</td>
+                            <td th:text="${entry.won}">0</td>
+                            <td th:text="${entry.drawn}">0</td>
+                            <td th:text="${entry.lost}">0</td>
+                            <td th:text="${entry.pointsFor}">0</td>
+                            <td th:text="${entry.pointsAgainst}">0</td>
+                            <td th:text="${entry.pointsDiff}">0</td>
+                            <td th:text="${entry.tryBonus}">0</td>
+                            <td th:text="${entry.lossBonus}">0</td>
+                            <td class="points" th:text="${entry.points}">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div th:if="${leagueTable == null or !leagueTable.hasData()}" class="warning-box">
+                <strong>League Table Unavailable:</strong>
+                <p>Unable to fetch league table data from England Rugby. Visit
+                   <a href="https://www.englandrugby.com/fixtures-and-results/search-results?competition=1623&amp;division=66490&amp;season=2024-2025" target="_blank">
+                   England Rugby</a> directly to view the current standings.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Summary</h2>
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="number" th:text="${totalClubs}">9</div>
+                    <div class="label">Clubs Tracked</div>
+                </div>
+                <div class="summary-card">
+                    <div class="number" th:text="${totalFirstTeamMatches}">133</div>
+                    <div class="label">Senior Matches</div>
+                </div>
+                <div class="summary-card">
+                    <div class="number" th:text="${totalAllMatches}">180</div>
+                    <div class="label">Total Recordings</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" th:if="${nextOpponentClub != null}">
+            <h2 class="section-title">
+                Upcoming Fixture Research: <span th:text="${nextOpponent}">Opponent</span>
+            </h2>
+            <div th:if="${nextFixture != null}" class="upcoming-fixture-tag">
+                <span class="fixture-label">UPCOMING FIXTURE:</span>
+                <span class="fixture-date" th:text="${nextFixture.date}">Saturday, 07 Mar 2026</span>
+                <span class="fixture-separator">|</span>
+                <span class="fixture-opponent">vs <span th:text="${nextOpponent}">Widnes</span></span>
+                <span class="fixture-separator">|</span>
+                <span class="fixture-venue" th:text="${nextFixture.getVenue()}">Home</span>
+            </div>
+            <div class="club-section" style="margin-top: 15px;">
+                <div class="club-header next-opponent-header" onclick="toggleSection('next-opponent')">
+                    <div>
+                        <h3 th:text="${nextOpponentClub.name}">Club Name</h3>
+                        <span class="filter-type" th:text="${nextOpponentClub.filterType}">All Senior</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span class="match-count" th:text="${nextOpponentClub.matchCount} + ' matches'">0 matches</span>
+                        <span id="toggle-icon-next-opponent" class="toggle-icon">&#9660;</span>
+                    </div>
+                </div>
+                <div id="section-content-next-opponent" class="match-list">
+                    <div th:if="${#lists.isEmpty(nextOpponentClub.firstTeamMatches) and #lists.isEmpty(nextOpponentClub.otherMatches)}" class="no-matches">
+                        No accessible match footage available
+                    </div>
+                    <div th:if="${!#lists.isEmpty(nextOpponentClub.firstTeamMatches)}" class="match-subsection">
+                        <h4 class="subsection-title">1st XV Matches</h4>
+                        <div th:each="match : ${nextOpponentClub.firstTeamMatches}" class="match-item">
+                            <span class="match-date" th:text="${match.date}">2026-01-01</span>
+                            <span class="match-title" th:text="${match.title}">Match Title</span>
+                            <span class="match-link">
+                                <a th:href="${match.url}" target="_blank">View Match</a>
+                            </span>
+                        </div>
+                    </div>
+                    <div th:if="${!#lists.isEmpty(nextOpponentClub.otherMatches)}" class="match-subsection">
+                        <h4 class="subsection-title">Other Senior Matches</h4>
+                        <div th:each="match : ${nextOpponentClub.otherMatches}" class="match-item">
+                            <span class="match-date" th:text="${match.date}">2026-01-01</span>
+                            <span class="match-title" th:text="${match.title}">Match Title</span>
+                            <span class="match-link">
+                                <a th:href="${match.url}" target="_blank">View Match</a>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" th:if="${burnageClub != null}">
+            <h2 class="section-title">Burnage Recent Matches</h2>
+            <div class="club-section burnage-club" style="margin-top: 0;">
+                <div class="club-header" onclick="toggleSection('burnage')">
+                    <div>
+                        <h3 th:text="${burnageClub.name}">Burnage</h3>
+                        <span class="filter-type" th:text="${burnageClub.filterType}">All Senior</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span class="match-count" th:text="${burnageClub.matchCount} + ' matches'">0 matches</span>
+                        <span id="toggle-icon-burnage" class="toggle-icon">&#9660;</span>
+                    </div>
+                </div>
+                <div id="section-content-burnage" class="match-list">
+                    <div th:if="${#lists.isEmpty(burnageClub.firstTeamMatches) and #lists.isEmpty(burnageClub.otherMatches)}" class="no-matches">
+                        No accessible match footage available
+                    </div>
+                    <div th:if="${!#lists.isEmpty(burnageClub.firstTeamMatches)}" class="match-subsection">
+                        <h4 class="subsection-title">1st XV Matches</h4>
+                        <div th:each="match : ${burnageClub.firstTeamMatches}" class="match-item">
+                            <span class="match-date" th:text="${match.date}">2026-01-01</span>
+                            <span class="match-title" th:text="${match.title}">Match Title</span>
+                            <span class="match-link">
+                                <a th:href="${match.url}" target="_blank">View Match</a>
+                            </span>
+                        </div>
+                    </div>
+                    <div th:if="${!#lists.isEmpty(burnageClub.otherMatches)}" class="match-subsection">
+                        <h4 class="subsection-title">Other Senior Matches</h4>
+                        <div th:each="match : ${burnageClub.otherMatches}" class="match-item">
+                            <span class="match-date" th:text="${match.date}">2026-01-01</span>
+                            <span class="match-title" th:text="${match.title}">Match Title</span>
+                            <span class="match-link">
+                                <a th:href="${match.url}" target="_blank">View Match</a>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">Other Club Match Footage</h2>
+
+            <div th:each="club, iterStat : ${otherClubs}"
+                 class="club-section"
+                 th:id="'club-' + ${iterStat.index}">
+                <div class="club-header" th:onclick="'toggleClub(' + ${iterStat.index} + ')'">
+                    <div>
+                        <h3 th:text="${club.name}">Club Name</h3>
+                        <span class="filter-type" th:text="${club.filterType}">All Senior</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span class="match-count" th:text="${club.matchCount} + ' matches'">0 matches</span>
+                        <span th:id="'toggle-icon-' + ${iterStat.index}" class="toggle-icon collapsed">&#9660;</span>
+                    </div>
+                </div>
+                <div th:id="'match-list-' + ${iterStat.index}" class="match-list collapsed">
+                    <div th:if="${#lists.isEmpty(club.firstTeamMatches) and #lists.isEmpty(club.otherMatches)}" class="no-matches">
+                        No accessible match footage available
+                    </div>
+                    <div th:if="${!#lists.isEmpty(club.firstTeamMatches)}" class="match-subsection">
+                        <h4 class="subsection-title">1st XV Matches</h4>
+                        <div th:each="match : ${club.firstTeamMatches}" class="match-item">
+                            <span class="match-date" th:text="${match.date}">2026-01-01</span>
+                            <span class="match-title" th:text="${match.title}">Match Title</span>
+                            <span class="match-link">
+                                <a th:href="${match.url}" target="_blank">View Match</a>
+                            </span>
+                        </div>
+                    </div>
+                    <div th:if="${!#lists.isEmpty(club.otherMatches)}" class="match-subsection">
+                        <h4 class="subsection-title">Other Senior Matches</h4>
+                        <div th:each="match : ${club.otherMatches}" class="match-item">
+                            <span class="match-date" th:text="${match.date}">2026-01-01</span>
+                            <span class="match-title" th:text="${match.title}">Match Title</span>
+                            <span class="match-link">
+                                <a th:href="${match.url}" target="_blank">View Match</a>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function toggleSection(sectionId) {
+                var content = document.getElementById('section-content-' + sectionId);
+                var toggleIcon = document.getElementById('toggle-icon-' + sectionId);
+
+                if (content.classList.contains('collapsed')) {
+                    content.classList.remove('collapsed');
+                    toggleIcon.classList.remove('collapsed');
+                } else {
+                    content.classList.add('collapsed');
+                    toggleIcon.classList.add('collapsed');
+                }
+            }
+
+            function toggleClub(index) {
+                var matchList = document.getElementById('match-list-' + index);
+                var toggleIcon = document.getElementById('toggle-icon-' + index);
+
+                if (matchList.classList.contains('collapsed')) {
+                    matchList.classList.remove('collapsed');
+                    toggleIcon.classList.remove('collapsed');
+                } else {
+                    matchList.classList.add('collapsed');
+                    toggleIcon.classList.add('collapsed');
+                }
+            }
+        </script>
+
+        <div class="section">
+            <h2 class="section-title">Additional Resources</h2>
+            <div class="alternative-access">
+                <h4>Clubs Requiring Alternative Access</h4>
+                <p>The following clubs use different recording platforms or require authentication:</p>
+                <ul>
+                    <li><strong>Firwood Waterloo</strong> - Uses alternative recording platform (not Veo)</li>
+                    <li><strong>AK (Altrincham Kersal)</strong> - Requires login credentials for access</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Burnage Rugby Club - Performance Analysis Department</p>
+            <p>This report is generated automatically from publicly accessible Veo recordings</p>
+        </div>
+    </div>
+</body>
+</html>
+
