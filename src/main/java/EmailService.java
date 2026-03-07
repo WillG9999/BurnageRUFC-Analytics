@@ -1,127 +1,200 @@
-import jakarta.mail.*;
-import jakarta.mail.internet.*;
-
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
 
 public class EmailService {
 
-    private static final String SMTP_HOST = "smtp.office365.com";
-    private static final int SMTP_PORT = 587;
+    private static final String MAILERLITE_API_BASE = "https://connect.mailerlite.com/api";
+    private static final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(30))
+            .build();
 
-    private final String username;
-    private final String password;
-    private final List<String> recipients;
+    private final String apiToken;
+    private final String groupId;
+    private final String fromEmail;
 
-    public EmailService(String username, String password, List<String> recipients) {
-        this.username = username;
-        this.password = password;
-        this.recipients = recipients;
+    public EmailService(String apiToken, String groupId, String fromEmail) {
+        this.apiToken = apiToken;
+        this.groupId = groupId;
+        this.fromEmail = fromEmail;
     }
 
     public void sendReport(String reportFilePath) {
-        if (recipients == null || recipients.isEmpty()) {
-            System.out.println("No email recipients configured. Set EMAIL_RECIPIENTS env var.");
+        if (apiToken == null || apiToken.isEmpty()) {
+            System.out.println("MailerLite API token not configured. Set MAILERLITE_API_TOKEN env var.");
             return;
         }
 
-        if (username == null || username.isEmpty() || password == null || password.isEmpty()) {
-            System.out.println("Email credentials not configured. Set SMTP_USERNAME and SMTP_PASSWORD env vars.");
+        if (groupId == null || groupId.isEmpty()) {
+            System.out.println("MailerLite Group ID not configured. Set MAILERLITE_GROUP_ID env var.");
+            return;
+        }
+
+        if (fromEmail == null || fromEmail.isEmpty()) {
+            System.out.println("Sender email not configured. Set MAILERLITE_FROM_EMAIL env var.");
             return;
         }
 
         System.out.println("\n========================================");
-        System.out.println("SENDING EMAIL REPORT");
+        System.out.println("SENDING EMAIL VIA MAILERLITE");
         System.out.println("========================================");
-        System.out.println("From: " + username);
-        System.out.println("Recipients: " + String.join(", ", recipients));
+        System.out.println("From: " + fromEmail);
 
         try {
             String htmlContent = Files.readString(Path.of(reportFilePath));
+            String subject = "Burnage Analytics Report - " + LocalDate.now();
 
-            Properties props = new Properties();
-            props.put("mail.smtp.auth", "true");
-            props.put("mail.smtp.starttls.enable", "true");
-            props.put("mail.smtp.host", SMTP_HOST);
-            props.put("mail.smtp.port", String.valueOf(SMTP_PORT));
-            props.put("mail.smtp.ssl.protocols", "TLSv1.2");
-
-            Session session = Session.getInstance(props, new Authenticator() {
-                @Override
-                protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication(username, password);
-                }
-            });
-
-            Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(username, "Burnage Analytics"));
-
-            List<InternetAddress> validAddresses = new ArrayList<>();
-            for (String email : recipients) {
-                try {
-                    validAddresses.add(new InternetAddress(email.trim()));
-                } catch (AddressException e) {
-                    System.out.println("Invalid email address skipped: " + email);
+            String campaignId = createCampaign(subject, htmlContent);
+            if (campaignId != null) {
+                boolean sent = sendCampaign(campaignId);
+                if (sent) {
+                    System.out.println("Email campaign sent successfully!");
                 }
             }
 
-            if (validAddresses.isEmpty()) {
-                System.out.println("No valid email addresses. Skipping email.");
-                return;
-            }
-
-            message.setRecipients(Message.RecipientType.TO, validAddresses.toArray(new InternetAddress[0]));
-            message.setSubject("Burnage Analytics Report - " + LocalDate.now());
-
-            MimeMultipart multipart = new MimeMultipart("mixed");
-
-            MimeBodyPart htmlPart = new MimeBodyPart();
-            htmlPart.setContent(htmlContent, "text/html; charset=utf-8");
-            multipart.addBodyPart(htmlPart);
-
-            MimeBodyPart attachmentPart = new MimeBodyPart();
-            attachmentPart.attachFile(reportFilePath);
-            attachmentPart.setFileName("burnage_analytics_report.html");
-            multipart.addBodyPart(attachmentPart);
-
-            message.setContent(multipart);
-
-            System.out.println("Sending...");
-            Transport.send(message);
-            System.out.println("Email sent successfully!");
             System.out.println("========================================\n");
 
-        } catch (MessagingException e) {
-            System.out.println("Failed to send email: " + e.getMessage());
         } catch (IOException e) {
             System.out.println("Failed to read report file: " + e.getMessage());
         }
     }
 
+    private String createCampaign(String subject, String htmlContent) {
+        String escapedHtml = escapeJsonString(htmlContent);
+        String campaignName = "Burnage Analytics Report " + LocalDate.now();
+
+        String jsonBody = """
+            {
+                "name": "%s",
+                "type": "regular",
+                "emails": [{
+                    "subject": "%s",
+                    "from": "%s",
+                    "from_name": "Burnage Analytics",
+                    "content": "%s"
+                }],
+                "groups": ["%s"]
+            }
+            """.formatted(campaignName, subject, fromEmail, escapedHtml, groupId);
+
+        try {
+            System.out.println("Creating campaign...");
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(MAILERLITE_API_BASE + "/campaigns"))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .header("Authorization", "Bearer " + apiToken)
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                String body = response.body();
+                String campaignId = extractJsonValue(body, "id");
+                if (campaignId != null) {
+                    System.out.println("Campaign created: " + campaignId);
+                    return campaignId;
+                }
+            } else {
+                System.out.println("Failed to create campaign: " + response.statusCode());
+                System.out.println(response.body());
+            }
+        } catch (Exception e) {
+            System.out.println("Error creating campaign: " + e.getMessage());
+        }
+        return null;
+    }
+
+    private boolean sendCampaign(String campaignId) {
+        try {
+            System.out.println("Scheduling campaign for immediate delivery...");
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(MAILERLITE_API_BASE + "/campaigns/" + campaignId + "/schedule"))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .header("Authorization", "Bearer " + apiToken)
+                    .POST(HttpRequest.BodyPublishers.ofString("{\"delivery\": \"instant\"}"))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                System.out.println("Campaign scheduled successfully");
+                return true;
+            } else {
+                System.out.println("Failed to send campaign: " + response.statusCode());
+                System.out.println(response.body());
+            }
+        } catch (Exception e) {
+            System.out.println("Error sending campaign: " + e.getMessage());
+        }
+        return false;
+    }
+
+    private String extractJsonValue(String json, String key) {
+        String searchKey = "\"" + key + "\":";
+        int keyIndex = json.indexOf(searchKey);
+        if (keyIndex == -1) return null;
+
+        int valueStart = keyIndex + searchKey.length();
+        while (valueStart < json.length() && Character.isWhitespace(json.charAt(valueStart))) {
+            valueStart++;
+        }
+
+        if (valueStart >= json.length()) return null;
+
+        if (json.charAt(valueStart) == '"') {
+            int valueEnd = json.indexOf('"', valueStart + 1);
+            if (valueEnd > valueStart) {
+                return json.substring(valueStart + 1, valueEnd);
+            }
+        } else {
+            int valueEnd = valueStart;
+            while (valueEnd < json.length() &&
+                   (Character.isDigit(json.charAt(valueEnd)) || json.charAt(valueEnd) == '.')) {
+                valueEnd++;
+            }
+            if (valueEnd > valueStart) {
+                return json.substring(valueStart, valueEnd);
+            }
+        }
+        return null;
+    }
+
+    private String escapeJsonString(String input) {
+        if (input == null) return "";
+        StringBuilder sb = new StringBuilder();
+        for (char c : input.toCharArray()) {
+            switch (c) {
+                case '\\' -> sb.append("\\\\");
+                case '"' -> sb.append("\\\"");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                default -> sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
     public boolean isConfigured() {
-        return username != null && !username.isEmpty()
-                && password != null && !password.isEmpty()
-                && recipients != null && !recipients.isEmpty();
+        return apiToken != null && !apiToken.isEmpty()
+                && groupId != null && !groupId.isEmpty();
     }
 
     public static EmailService fromEnvironment() {
-        String username = System.getenv("SMTP_USERNAME");
-        String password = System.getenv("SMTP_PASSWORD");
-        String recipientsStr = System.getenv("EMAIL_RECIPIENTS");
-
-        List<String> recipients = new ArrayList<>();
-        if (recipientsStr != null && !recipientsStr.isEmpty()) {
-            for (String email : recipientsStr.split(",")) {
-                recipients.add(email.trim());
-            }
-        }
-
-        return new EmailService(username, password, recipients);
+        String apiToken = System.getenv("MAILERLITE_API_TOKEN");
+        String groupId = System.getenv("MAILERLITE_GROUP_ID");
+        String fromEmail = System.getenv("MAILERLITE_FROM_EMAIL");
+        return new EmailService(apiToken, groupId, fromEmail);
     }
 }
-

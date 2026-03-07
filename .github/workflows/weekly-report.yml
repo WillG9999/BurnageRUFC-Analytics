@@ -35,9 +35,9 @@ jobs:
 
       - name: Build and run report generator
         env:
-          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          EMAIL_RECIPIENTS: ${{ secrets.EMAIL_RECIPIENTS }}
+          MAILERLITE_API_TOKEN: ${{ secrets.MAILERLITE_API_TOKEN }}
+          MAILERLITE_GROUP_ID: ${{ secrets.MAILERLITE_GROUP_ID }}
+          MAILERLITE_FROM_EMAIL: ${{ secrets.MAILERLITE_FROM_EMAIL }}
           DISPLAY: :99
         run: |
           mvn compile exec:java -Dexec.mainClass="BurnageAnalyticsReportGenerator" -q
@@ -49,4 +49,3 @@ jobs:
           name: burnage-analytics-report
           path: burnage_analytics_report.html
           retention-days: 30
-

@@ -7,7 +7,7 @@ Automated match footage aggregator and analytics report generator for Burnage Ru
 - Fetches match footage from Veo across multiple clubs in the league
 - Scrapes league table and fixtures from England Rugby
 - Generates HTML report with upcoming fixture research
-- Sends report via email to configured recipients
+- Sends report via MailerLite to subscribers
 - Runs automatically every Sunday at 11:00 AM via GitHub Actions
 
 ## Run Locally
@@ -20,25 +20,34 @@ mvn compile exec:java -Dexec.mainClass="BurnageAnalyticsReportGenerator"
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `SMTP_USERNAME` | Your Outlook email address | Yes |
-| `SMTP_PASSWORD` | Your Outlook app password | Yes |
-| `EMAIL_RECIPIENTS` | Comma-separated list of recipient emails | Yes |
+| `MAILERLITE_API_TOKEN` | Your MailerLite API token | Yes |
+| `MAILERLITE_GROUP_ID` | The MailerLite group ID to send to | Yes |
+| `MAILERLITE_FROM_EMAIL` | Verified sender email in MailerLite | Yes |
 
 ## GitHub Actions Setup
 
 1. Go to your repository Settings > Secrets and variables > Actions
 2. Add the following repository secrets:
-   - `SMTP_USERNAME` - Your Outlook email (e.g., `your-email@live.com`)
-   - `SMTP_PASSWORD` - Your Outlook app password (generate at https://account.live.com/proofs/AppPassword)
-   - `EMAIL_RECIPIENTS` - Comma-separated emails (e.g., `will_graham@live.com,coach@burnage.com`)
+   - `MAILERLITE_API_TOKEN` - Your MailerLite API token
+   - `MAILERLITE_GROUP_ID` - The group ID for your subscribers
+   - `MAILERLITE_FROM_EMAIL` - Your verified sender email address
 
 3. The workflow runs automatically every Sunday at 11:00 AM UTC
 4. You can also trigger it manually from Actions > Weekly Burnage Analytics Report > Run workflow
 
-## Outlook App Password
+## MailerLite Setup
 
-To generate an app password for Outlook/Hotmail:
-1. Go to https://account.live.com/proofs/AppPassword
-2. Sign in with your Microsoft account
-3. Click "Create a new app password"
-4. Copy the generated password and use it as `SMTP_PASSWORD`
+1. Go to https://app.mailerlite.com and sign in
+2. Navigate to Integrations > MailerLite API
+3. Click "Generate new token" and copy the token
+4. Verify your sender email in Account Settings > Domains
+5. Create a Group for your subscribers (Subscribers > Groups > Create group)
+6. Get the Group ID from the URL when viewing the group (or via API)
+7. Add subscribers to the group via the MailerLite dashboard
+
+## Managing Subscribers
+
+Subscribers are managed directly in MailerLite:
+- Add/remove subscribers in the MailerLite dashboard
+- No code changes needed to update the recipient list
+- Subscribers can unsubscribe themselves via the email footer
