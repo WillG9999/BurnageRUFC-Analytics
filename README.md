@@ -51,3 +51,4 @@ Subscribers are managed directly in MailerLite:
 - Add/remove subscribers in the MailerLite dashboard
 - No code changes needed to update the recipient list
 - Subscribers can unsubscribe themselves via the email footer
+

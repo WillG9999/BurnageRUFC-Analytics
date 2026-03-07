@@ -488,9 +488,9 @@
         <div class="section">
             <div class="section-header-collapsible" onclick="toggleSection('about')">
                 <h2 class="section-title" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">About This Report</h2>
-                <span id="toggle-icon-about" class="toggle-icon collapsed">&#9660;</span>
+                <span id="toggle-icon-about" class="toggle-icon">&#9660;</span>
             </div>
-            <div id="section-content-about" class="section-content collapsed">
+            <div id="section-content-about" class="section-content">
                 <div class="info-box">
                     <p>This report aggregates the latest accessible match footage from Veo across clubs in our competitive landscape.
                        The data provides valuable resources for performance analysis, opposition research, and tactical preparation.</p>
@@ -564,9 +564,9 @@
         <div class="section">
             <div class="section-header-collapsible" onclick="toggleSection('results')">
                 <h2 class="section-title" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">Recent Results</h2>
-                <span id="toggle-icon-results" class="toggle-icon collapsed">&#9660;</span>
+                <span id="toggle-icon-results" class="toggle-icon">&#9660;</span>
             </div>
-            <div id="section-content-results" class="section-content collapsed">
+            <div id="section-content-results" class="section-content">
                 <div th:if="${recentResults != null and !recentResults.isEmpty()}">
                     <table class="league-table">
                         <thead>
@@ -647,23 +647,6 @@
             </div>
         </div>
 
-        <div class="section">
-            <h2 class="section-title">Summary</h2>
-            <div class="summary-grid">
-                <div class="summary-card">
-                    <div class="number" th:text="${totalClubs}">9</div>
-                    <div class="label">Clubs Tracked</div>
-                </div>
-                <div class="summary-card">
-                    <div class="number" th:text="${totalFirstTeamMatches}">133</div>
-                    <div class="label">Senior Matches</div>
-                </div>
-                <div class="summary-card">
-                    <div class="number" th:text="${totalAllMatches}">180</div>
-                    <div class="label">Total Recordings</div>
-                </div>
-            </div>
-        </div>
 
         <div class="section" th:if="${nextOpponentClub != null}">
             <h2 class="section-title">
@@ -770,10 +753,10 @@
                     </div>
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <span class="match-count" th:text="${club.matchCount} + ' matches'">0 matches</span>
-                        <span th:id="'toggle-icon-' + ${iterStat.index}" class="toggle-icon collapsed">&#9660;</span>
+                        <span th:id="'toggle-icon-' + ${iterStat.index}" class="toggle-icon">&#9660;</span>
                     </div>
                 </div>
-                <div th:id="'match-list-' + ${iterStat.index}" class="match-list collapsed">
+                <div th:id="'match-list-' + ${iterStat.index}" class="match-list">
                     <div th:if="${#lists.isEmpty(club.firstTeamMatches) and #lists.isEmpty(club.otherMatches)}" class="no-matches">
                         No accessible match footage available
                     </div>

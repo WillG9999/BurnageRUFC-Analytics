@@ -72,19 +72,20 @@ public class BurnageAnalyticsReportGenerator {
     }
 
     private void sendEmailReport() {
-        EmailService emailService = EmailService.fromEnvironment();
+        MicrosoftGraphEmailService emailService = MicrosoftGraphEmailService.fromEnvironment();
         if (emailService.isConfigured()) {
             emailService.sendReport(OUTPUT_FILE);
-        } else {
-            System.out.println("\n========================================");
-            System.out.println("EMAIL NOT CONFIGURED");
-            System.out.println("========================================");
-            System.out.println("To enable email, set these environment variables:");
-            System.out.println("  SMTP_USERNAME    - Your Outlook email address");
-            System.out.println("  SMTP_PASSWORD    - Your app password");
-            System.out.println("  EMAIL_RECIPIENTS - Comma-separated list of emails");
-            System.out.println("========================================\n");
+            return;
         }
+
+        System.out.println("\n========================================");
+        System.out.println("EMAIL NOT CONFIGURED");
+        System.out.println("========================================");
+        System.out.println("Set these in your .env file:");
+        System.out.println("  SENDER_EMAIL     - Your Outlook email");
+        System.out.println("  SENDER_PASSWORD  - Your app password");
+        System.out.println("  EMAIL_RECIPIENTS - Who to send to");
+        System.out.println("========================================\n");
     }
 
     private void fetchMatchesFromAllClubs() {
