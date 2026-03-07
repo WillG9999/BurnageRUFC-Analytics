@@ -296,6 +296,13 @@ public class BurnageAnalyticsReportGenerator {
         context.setVariable("burnageClub", burnageClub);
         context.setVariable("otherClubs", otherClubs);
 
+        List<MatchData> recentOpponentMatches = new ArrayList<>();
+        if (nextOpponent != null && nextOpponentClub == null) {
+            recentOpponentMatches = findMatchesAgainstOpponent(nextOpponent);
+        }
+        context.setVariable("recentOpponentMatches", recentOpponentMatches);
+        context.setVariable("hasNoVeoForOpponent", nextOpponent != null && nextOpponentClub == null);
+
         LeagueTableScraper.Fixture nextFixture = getNextFixture();
         context.setVariable("nextFixture", nextFixture);
 
@@ -321,27 +328,83 @@ public class BurnageAnalyticsReportGenerator {
     }
 
     private boolean clubMatchesOpponent(String clubName, String opponent) {
-        String clubLower = clubName.toLowerCase();
-        String opponentLower = opponent.toLowerCase();
+        String clubLower = clubName.toLowerCase().trim();
+        String opponentLower = opponent.toLowerCase().trim();
 
-        if (clubLower.contains(opponentLower) || opponentLower.contains(clubLower)) {
+        String clubNormalized = normalizeTeamName(clubLower);
+        String opponentNormalized = normalizeTeamName(opponentLower);
+
+        if (clubNormalized.equals(opponentNormalized)) {
             return true;
         }
 
-        String[] clubWords = clubLower.split("\\s+");
-        String[] opponentWords = opponentLower.split("\\s+");
+        if (clubNormalized.contains(opponentNormalized) || opponentNormalized.contains(clubNormalized)) {
+            if (clubNormalized.length() > 5 && opponentNormalized.length() > 5) {
+                return true;
+            }
+        }
 
-        for (String clubWord : clubWords) {
-            if (clubWord.length() > 3) {
-                for (String opWord : opponentWords) {
-                    if (opWord.length() > 3 && (clubWord.contains(opWord) || opWord.contains(clubWord))) {
-                        return true;
-                    }
+        String[] clubKeyWords = getKeyWords(clubLower);
+        String[] opponentKeyWords = getKeyWords(opponentLower);
+
+        for (String clubWord : clubKeyWords) {
+            for (String opWord : opponentKeyWords) {
+                if (clubWord.equals(opWord) && clubWord.length() > 4) {
+                    return true;
                 }
             }
         }
 
         return false;
+    }
+
+    private String normalizeTeamName(String name) {
+        return name.replaceAll("\\s*(rufc|rfc|rugby|club|rugby club|fc)\\s*", " ")
+                   .replaceAll("\\s+", " ")
+                   .trim();
+    }
+
+    private String[] getKeyWords(String name) {
+        String[] commonWords = {"rufc", "rfc", "rugby", "club", "fc", "park", "vale", "of", "the", "st", "helens"};
+        String[] words = name.split("\\s+");
+        List<String> keyWords = new ArrayList<>();
+        for (String word : words) {
+            boolean isCommon = false;
+            for (String common : commonWords) {
+                if (word.equals(common)) {
+                    isCommon = true;
+                    break;
+                }
+            }
+            if (!isCommon && word.length() > 2) {
+                keyWords.add(word);
+            }
+        }
+        return keyWords.toArray(new String[0]);
+    }
+
+    private List<MatchData> findMatchesAgainstOpponent(String opponent) {
+        List<MatchData> matchesAgainstOpponent = new ArrayList<>();
+        String opponentLower = opponent.toLowerCase();
+        String[] opponentKeyWords = getKeyWords(opponentLower);
+
+        for (MatchRecord match : firstTeamMatches) {
+            String titleLower = match.title().toLowerCase();
+
+            for (String keyword : opponentKeyWords) {
+                if (keyword.length() > 3 && titleLower.contains(keyword)) {
+                    matchesAgainstOpponent.add(new MatchData(match.date(), match.title() + " (" + match.clubName() + ")", match.url()));
+                    break;
+                }
+            }
+        }
+
+        matchesAgainstOpponent.sort((a, b) -> b.date().compareTo(a.date()));
+
+        if (matchesAgainstOpponent.size() > 5) {
+            return matchesAgainstOpponent.subList(0, 5);
+        }
+        return matchesAgainstOpponent;
     }
 
     private List<ClubReportData> buildClubReportData() {

@@ -648,6 +648,38 @@
         </div>
 
 
+        <div class="section" th:if="${hasNoVeoForOpponent}">
+            <h2 class="section-title">
+                Upcoming Fixture Research: <span th:text="${nextOpponent}">Opponent</span>
+            </h2>
+            <div th:if="${nextFixture != null}" class="upcoming-fixture-tag">
+                <span class="fixture-label">UPCOMING FIXTURE:</span>
+                <span class="fixture-date" th:text="${nextFixture.date}">Saturday, 07 Mar 2026</span>
+                <span class="fixture-separator">|</span>
+                <span class="fixture-opponent">vs <span th:text="${nextOpponent}">Widnes</span></span>
+                <span class="fixture-separator">|</span>
+                <span class="fixture-venue" th:text="${nextFixture.getVenue()}">Home</span>
+            </div>
+            <div class="warning-box" style="margin-top: 15px;">
+                <strong>No Veo Available</strong>
+                <p><span th:text="${nextOpponent}">Opponent</span> does not have publicly accessible Veo footage.</p>
+            </div>
+            <div th:if="${!#lists.isEmpty(recentOpponentMatches)}" style="margin-top: 15px;">
+                <h4 style="margin-bottom: 10px;">Recommended: Recent matches involving <span th:text="${nextOpponent}">Opponent</span></h4>
+                <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">These are matches from clubs with Veo who have recently played against this team:</p>
+                <div th:each="match : ${recentOpponentMatches}" class="match-item">
+                    <span class="match-date" th:text="${match.date}">2026-01-01</span>
+                    <span class="match-title" th:text="${match.title}">Match Title</span>
+                    <span class="match-link">
+                        <a th:href="${match.url}" target="_blank">View Match</a>
+                    </span>
+                </div>
+            </div>
+            <div th:if="${#lists.isEmpty(recentOpponentMatches)}" class="info-box" style="margin-top: 15px;">
+                <p>No recent matches found from tracked clubs against this opponent.</p>
+            </div>
+        </div>
+
         <div class="section" th:if="${nextOpponentClub != null}">
             <h2 class="section-title">
                 Upcoming Fixture Research: <span th:text="${nextOpponent}">Opponent</span>
@@ -818,6 +850,7 @@
                 <h4>Clubs Requiring Alternative Access</h4>
                 <p>The following clubs use different recording platforms or require authentication:</p>
                 <ul>
+                    <li><strong>West Park (St Helens)</strong> - No Veo available</li>
                     <li><strong>Firwood Waterloo</strong> - Uses alternative recording platform (not Veo)</li>
                     <li><strong>AK (Altrincham Kersal)</strong> - Requires login credentials for access</li>
                 </ul>
