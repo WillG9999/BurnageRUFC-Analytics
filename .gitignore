@@ -6,6 +6,13 @@ out/
 ### Environment ###
 .env
 
+### Build ###
+target/
+*.class
+
+### Generated Reports ###
+burnage_analytics_report.html
+
 ### Eclipse ###
 .apt_generated
 .classpath

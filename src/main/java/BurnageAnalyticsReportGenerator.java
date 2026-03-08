@@ -81,10 +81,9 @@ public class BurnageAnalyticsReportGenerator {
         System.out.println("\n========================================");
         System.out.println("EMAIL NOT CONFIGURED");
         System.out.println("========================================");
-        System.out.println("Set these in your .env file:");
-        System.out.println("  SENDER_EMAIL     - Your Outlook email");
-        System.out.println("  SENDER_PASSWORD  - Your app password");
-        System.out.println("  EMAIL_RECIPIENTS - Who to send to");
+        System.out.println("Set these environment variables:");
+        System.out.println("  RESEND_API_KEY   - Your Resend API key");
+        System.out.println("  EMAIL_RECIPIENTS - Comma-separated list of emails");
         System.out.println("========================================\n");
     }
 

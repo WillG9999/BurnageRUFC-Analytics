@@ -11,12 +11,13 @@ import java.util.List;
 
 public class MicrosoftGraphEmailService {
 
-    private static final String RESEND_API_KEY = "re_PpobeyXE_N4ycg9UF367AhvMwMpXBS44v";
     private static final String FROM_EMAIL = "onboarding@resend.dev";
 
+    private final String apiKey;
     private final List<String> recipients;
 
-    public MicrosoftGraphEmailService(List<String> recipients) {
+    public MicrosoftGraphEmailService(String apiKey, List<String> recipients) {
+        this.apiKey = apiKey;
         this.recipients = recipients;
     }
 
@@ -30,7 +31,7 @@ public class MicrosoftGraphEmailService {
             String htmlContent = Files.readString(Path.of(reportFilePath));
             String subject = "Burnage Analytics Report - " + LocalDate.now();
 
-            Resend resend = new Resend(RESEND_API_KEY);
+            Resend resend = new Resend(apiKey);
 
             for (String recipient : recipients) {
                 CreateEmailOptions params = CreateEmailOptions.builder()
@@ -59,10 +60,12 @@ public class MicrosoftGraphEmailService {
     }
 
     public boolean isConfigured() {
-        return recipients != null && !recipients.isEmpty();
+        return apiKey != null && !apiKey.isEmpty()
+            && recipients != null && !recipients.isEmpty();
     }
 
     public static MicrosoftGraphEmailService fromEnvironment() {
+        String apiKey = System.getenv("RESEND_API_KEY");
         String recipientList = System.getenv("EMAIL_RECIPIENTS");
 
         List<String> recipients = List.of();
@@ -73,6 +76,6 @@ public class MicrosoftGraphEmailService {
                     .toList();
         }
 
-        return new MicrosoftGraphEmailService(recipients);
+        return new MicrosoftGraphEmailService(apiKey, recipients);
     }
 }
