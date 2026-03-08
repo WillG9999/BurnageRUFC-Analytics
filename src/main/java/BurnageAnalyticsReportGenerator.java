@@ -98,7 +98,7 @@ public class BurnageAnalyticsReportGenerator {
     }
 
     private void fetchClubRecordings(ClubConstants.Club club) {
-        String recordingsUrl = API_BASE + "/clubs/" + club.slug() + "/recordings/?limit=50";
+        String recordingsUrl = API_BASE + "/clubs/" + club.slug() + "/recordings/?limit=300";
 
         String response = makeApiRequest(recordingsUrl);
         if (response == null) {
@@ -245,9 +245,6 @@ public class BurnageAnalyticsReportGenerator {
             return true;
         }
 
-        if (combined.contains("untitled recording") || combined.contains("untitled")) {
-            return true;
-        }
 
         return false;
     }
